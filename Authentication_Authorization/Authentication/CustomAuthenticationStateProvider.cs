@@ -4,12 +4,12 @@ using System.Security.Claims;
 
 namespace Authentication_Authorization.Authentication
 {
-	public class CutomAuthenticationStateProvider : AuthenticationStateProvider
+	public class CustomAuthenticationStateProvider : AuthenticationStateProvider
 	{
 		private readonly ProtectedSessionStorage _sessionStorage;
 		private ClaimsPrincipal _anonymous = new ClaimsPrincipal(new ClaimsIdentity());
 
-		public CutomAuthenticationStateProvider(ProtectedSessionStorage sessionStorage)
+		public CustomAuthenticationStateProvider(ProtectedSessionStorage sessionStorage)
 		{
 			_sessionStorage = sessionStorage;
 		}
@@ -39,6 +39,27 @@ namespace Authentication_Authorization.Authentication
 			
 		}
 
+		public async Task UpdateAuthenticationState(UserSession userSession)
+		{
+			ClaimsPrincipal claimsPrincipal;
 
+			if (userSession != null)
+			{
+				await _sessionStorage.SetAsync("UserSession", userSession);
+
+				claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new List<Claim>
+				{
+					new Claim(ClaimTypes.Name, userSession.UserName),
+					new Claim(ClaimTypes.Role, userSession.Role)
+				}));
+			}
+			else
+			{
+				await _sessionStorage.DeleteAsync("UserSession");
+				claimsPrincipal = _anonymous;
+			}
+
+			NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(claimsPrincipal)));
+		}
 	}
 }
